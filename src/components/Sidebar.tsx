@@ -80,6 +80,18 @@ export default function Sidebar({
   const fileRef = useRef<HTMLInputElement>(null);
   const draggingRef = useRef(false);
   const suppressClick = useRef(false);
+  const lastTap = useRef<{ id: string | null; t: number }>({ id: null, t: 0 });
+
+  // Folder row tap: toggles collapse; a second tap within 350 ms opens the folder.
+  // (Done by hand because phones don't reliably fire dblclick.)
+  const onFolderTap = (id: string) => {
+    if (suppressClick.current || renaming === id) return;
+    const now = Date.now();
+    const isDouble = lastTap.current.id === id && now - lastTap.current.t < 350;
+    lastTap.current = isDouble ? { id: null, t: 0 } : { id, t: now };
+    if (!filtering) toggleCollapsed(id); // the 2nd tap undoes the 1st, like a normal double-click
+    if (isDouble) setZoom(id);
+  };
   const cancelRename = useRef(false);
 
   // ---------- Folder state (persisted per user) ----------
@@ -522,10 +534,9 @@ export default function Sidebar({
                 data-parent={f.parentId ?? ""}
                 data-expanded={expanded ? "1" : "0"}
                 onPointerDown={(e) => startGesture(e, { kind: "folder", id: f.id, label: f.name })}
-                onClick={() => !suppressClick.current && !filtering && renaming !== f.id && toggleCollapsed(f.id)}
-                onDoubleClick={() => renaming !== f.id && setZoom(f.id)}
+                onClick={() => onFolderTap(f.id)}
                 onContextMenu={(e) => e.preventDefault()}
-                title="Click to expand/collapse · double-click to open"
+                title="Tap to expand/collapse · double-tap to open"
               >
                 {guides(depth)}
                 <button

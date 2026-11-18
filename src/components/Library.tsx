@@ -86,6 +86,7 @@ export default function Library({ onLogout }: { onLogout: () => void }) {
   const updatingRef = useRef(false);
 
   const searchRef = useRef<HTMLInputElement>(null);
+  const [hasKeyboard, setHasKeyboard] = useState(true); // shows the "/" shortcut hint only with a mouse/keyboard
   const started = useRef(false);
   const userRef = useRef<string | null>(null);
 
@@ -102,6 +103,16 @@ export default function Library({ onLogout }: { onLogout: () => void }) {
     setSidebarOpen(sb !== null ? sb === "1" : window.matchMedia("(min-width: 901px)").matches);
     const id = window.setTimeout(() => setAnimate(true), 50);
     return () => window.clearTimeout(id);
+  }, []);
+
+  // Show the "/" hint only with a mouse/keyboard, and keep it in sync if that changes
+  // (e.g. a tablet with a keyboard attached, or DevTools device mode toggled).
+  useEffect(() => {
+    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const update = () => setHasKeyboard(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
   }, []);
 
   const toggleSidebar = (open: boolean) => {
@@ -353,7 +364,7 @@ export default function Library({ onLogout }: { onLogout: () => void }) {
           {targets.size > 0 && <span className="dot-badge">{targets.size}</span>}
         </button>
         <strong className="brand">Playlist Maker</strong>
-        <div className="sync">
+        <div className={`sync ${syncing || sync.status === "error" ? "" : "idle"}`}>
           {syncing && (
             <>
               <span className="muted">
@@ -370,27 +381,22 @@ export default function Library({ onLogout }: { onLogout: () => void }) {
               Sync failed
             </span>
           )}
+        </div>
+        <div className="hstack user-box">
           <button
-            className="secondary small"
+            className="secondary small reload-btn"
             disabled={syncing || !user}
             onClick={() => user && runSync(user.id, null)}
             title="Re-download all liked songs"
+            aria-label="Reload all liked songs"
           >
-            Reload all
+            <Icon name="refresh" size={18} />
+            <span className="btn-label">Reload all</span>
           </button>
-        </div>
-        <div className="hstack user-box">
-          <button className="secondary small" onClick={onLogout}>
+          <button className="secondary small logout-btn" onClick={onLogout}>
             Log out
           </button>
-          {user && (
-            <span className="user-chip" title={user.name}>
-              <span className="avatar">
-                {user.image ? <img src={user.image} alt="" width={28} height={28} /> : <span>{user.name.slice(0, 1).toUpperCase()}</span>}
-              </span>
-              <span className="user-name">{user.name}</span>
-            </span>
-          )}
+          {user && <UserMenu name={user.name} image={user.image} onLogout={onLogout} />}
         </div>
       </header>
 
@@ -418,7 +424,7 @@ export default function Library({ onLogout }: { onLogout: () => void }) {
               ref={searchRef}
               type="search"
               className="search"
-              placeholder="Search title, artist, album  ( / )"
+              placeholder={hasKeyboard ? "Search title, artist, album  ( / )" : "Search title, artist, album"}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -565,6 +571,43 @@ export default function Library({ onLogout }: { onLogout: () => void }) {
           onClose={() => setDialogOpen(false)}
           onClearSelection={clearSelection}
         />
+      )}
+    </div>
+  );
+}
+
+/** Profile picture (+ name on wide screens). Tapping it opens a small menu with Log out. */
+function UserMenu({ name, image, onLogout }: { name: string; image: string | null; onLogout: () => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("pointerdown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div className="user-menu-wrap" ref={ref}>
+      <button className="user-chip" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} title={name}>
+        <span className="avatar">
+          {image ? <img src={image} alt="" width={28} height={28} /> : <span>{name.slice(0, 1).toUpperCase()}</span>}
+        </span>
+        <span className="user-name">{name}</span>
+      </button>
+      {open && (
+        <div className="user-menu" role="menu" data-popover>
+          <div className="user-menu-name">{name}</div>
+          <button className="user-menu-item" role="menuitem" onClick={onLogout}>
+            <Icon name="logout" size={16} /> Log out
+          </button>
+        </div>
       )}
     </div>
   );

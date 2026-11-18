@@ -212,9 +212,15 @@ kbd {
   line-height: 16px;
 }
 
-/* Profile picture + name, top right. */
-.user-box { gap: 12px; }
+/* Profile picture + name, top right; tapping it opens a small menu. */
+.user-box { gap: 12px; margin-left: auto; }
+.reload-btn { display: inline-flex; align-items: center; gap: 6px; }
+.reload-btn svg { flex: none; }
+.user-menu-wrap { position: relative; }
 .user-chip {
+  color: var(--fg);
+  border: 0;
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -225,7 +231,41 @@ kbd {
   font-weight: 700;
   font-size: 13px;
 }
+.user-chip:not(:disabled):hover { background: #2a2a2a; transform: scale(1.03); }
 .user-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  min-width: 200px;
+  padding: 4px;
+  background: var(--elev-2);
+  border-radius: 6px;
+  box-shadow: 0 16px 24px rgba(0, 0, 0, 0.3), 0 6px 8px rgba(0, 0, 0, 0.2);
+}
+.user-menu-name {
+  padding: 10px 12px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: none;
+  color: var(--fg);
+  font-weight: 400;
+  text-align: left;
+}
+.user-menu-item:not(:disabled):hover { background: var(--hover-strong); transform: none; }
 .avatar { display: grid; flex: none; }
 .avatar img, .avatar span {
   width: 28px;
@@ -684,8 +724,15 @@ button.check:disabled { opacity: 0.3; }
   .app { padding: 0 0 0; }
   .main-panel { border-radius: 0; }
   .grid { gap: 10px; padding: 0 8px; }
-  .topbar { flex-wrap: wrap; height: auto; padding: 8px; row-gap: 4px; }
-  .sync { order: 3; flex-basis: 100%; justify-content: flex-start; }
+  .topbar { flex-wrap: wrap; height: auto; min-height: 56px; padding: 8px; row-gap: 4px; }
+  .sync { order: 3; flex-basis: 100%; justify-content: flex-start; padding: 0 4px; }
+  .sync.idle { display: none; } /* "Loaded N songs" is already shown in the toolbar */
+  .user-box { gap: 8px; }
+  .logout-btn { display: none; } /* it's in the picture menu */
+  .reload-btn,
+  .reload-btn:not(:disabled):hover { width: 40px; height: 40px; padding: 0; justify-content: center; border: 0; background: var(--elev); }
+  .reload-btn svg { width: 20px; height: 20px; }
+  .reload-btn .btn-label { display: none; }
   .shortcuts { display: none; } /* no keyboard on phones */
   .user-chip { padding: 4px; } /* just the picture on phones */
   .user-name { display: none; }
